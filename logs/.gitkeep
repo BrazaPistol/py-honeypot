@@ -1,0 +1,1 @@
+Pasta logs/ — arquivos JSONL de sessões são gerados aqui em runtime e NÃO devem ser commitados (ver .gitignore).

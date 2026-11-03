@@ -1,0 +1,1 @@
+Núcleo do honeypot: server, session, config e logger.
