@@ -3,6 +3,10 @@
 Le o arquivo logs/sessions.jsonl (escrito pelo logger do honeypot)
 e expoe estatisticas via Flask. Bind em 127.0.0.1 por padrao:
 NUNCA exponha o dashboard na internet (ver docs/DEPLOYMENT.md).
+
+Paginas informativas explicam o escopo local da ferramenta: ela observa
+apenas o SEU honeypot — não pesquisa dispositivos na internet e nao é
+afiliada ao Shodan ou qualquer buscador global.
 """
 
 from __future__ import annotations
@@ -11,59 +15,120 @@ import json
 from collections import Counter
 from pathlib import Path
 
-from flask import Flask, jsonify, render_template_string
+from flask import Flask, jsonify, render_template
 
 LOG_FILE = Path("logs/sessions.jsonl")
 
-INDEX_HTML = """
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="utf-8">
-  <title>py-honeypot Dashboard</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
-  <style>
-    body { font-family: sans-serif; margin: 2rem; background: #f5f5f5; }
-    h1 { color: #b45309; }
-    .cards { display: flex; gap: 1rem; margin-bottom: 2rem; }
-    .card { background: white; padding: 1rem 1.5rem; border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,.15); }
-    .card h2 { margin: 0; font-size: 2rem; }
-    .card span { color: #666; }
-    #chart { background: white; padding: 1rem; border-radius: 8px; }
-  </style>
-</head>
-<body>
-  <h1>&#127851; py-honeypot Dashboard</h1>
-  <div class="cards">
-    <div class="card"><h2 id="total">0</h2><span>sessões</span></div>
-    <div class="card"><h2 id="unique-ips">0</h2><span>IPs únicos</span></div>
-    <div class="card"><h2 id="top-service">—</h2><span>serviço mais visado</span></div>
-  </div>
-  <canvas id="chart" width="600" height="250"></canvas>
-  <script>
-    async function refresh() {
-      const res = await fetch('/api/stats');
-      const data = await res.json();
-      document.getElementById('total').textContent = data.total_sessions;
-      document.getElementById('unique-ips').textContent = data.unique_ips;
-      document.getElementById('top-service').textContent = data.top_service || '—';
-      window.chart.data.labels = data.by_service.labels;
-      window.chart.data.datasets[0].data = data.by_service.values;
-      window.chart.update();
-    }
-    window.chart = new Chart(document.getElementById('chart'), {
-      type: 'bar',
-      data: { labels: [], datasets: [{ label: 'Sessões por serviço', data: [],
-              backgroundColor: '#b45309' }] },
-      options: { animation: false }
-    });
-    refresh();
-    setInterval(refresh, 5000);  // atualiza a cada 5s
-  </script>
-</body>
-</html>
-"""
+INFO_PAGES: dict[str, dict] = {
+    "como-funciona": {
+        "eyebrow": "ENTENDA A FERRAMENTA",
+        "title": "Como funciona",
+        "description": (
+            "O py-honeypot abre portas locais que imitam Telnet, FTP e HTTP. "
+            "Este painel lê apenas o arquivo de logs gerado na SUA máquina — "
+            "não pesquisa dispositivos na internet e não envia nada para fora."
+        ),
+        "sections": [
+            {
+                "title": "Coleta local",
+                "body": (
+                    "Cada conexão recebida pelos serviços simulados é gravada "
+                    "como uma sessão em logs/sessions.jsonl, com comandos, "
+                    "credenciais tentadas e eventos."
+                ),
+            },
+            {
+                "title": "Leitura do painel",
+                "body": (
+                    "O dashboard apenas lê esse arquivo e resume: total de "
+                    "sessões, IPs de origem únicos e serviço mais visado."
+                ),
+            },
+            {
+                "title": "Escopo",
+                "body": (
+                    "Tudo acontece no seu computador. A ferramenta não "
+                    "pesquisa dispositivos de terceiros, não escaneia redes "
+                    "externas e não é afiliada ao Shodan."
+                ),
+            },
+        ],
+    },
+    "servicos": {
+        "eyebrow": "PORTAS SIMULADAS",
+        "title": "Serviços simulados",
+        "description": (
+            "Cada serviço falso imita um protocolo legado para registrar o "
+            "comportamento de quem tenta se conectar."
+        ),
+        "sections": [
+            {
+                "title": "Telnet (porta 2323)",
+                "body": (
+                    "Simula login de roteador: pede usuário e senha, falha "
+                    "até 3 tentativas e captura cada credencial digitada."
+                ),
+            },
+            {
+                "title": "FTP (porta 2121)",
+                "body": (
+                    "Banner 'FTP Server ready' com comandos USER/PASS sempre "
+                    "rejeitados — captura dicionários de credenciais."
+                ),
+            },
+            {
+                "title": "HTTP (porta 8080)",
+                "body": (
+                    "Responde qualquer path (inclusive /wp-login.php) e "
+                    "registra user-agents e padrões de scanners web."
+                ),
+            },
+            {
+                "title": "SSH (desativado)",
+                "body": (
+                    "Banner-only, desativado por padrão no config.yaml — "
+                    "handshake real exige biblioteca adicional."
+                ),
+            },
+        ],
+    },
+    "dados-e-seguranca": {
+        "eyebrow": "PRIVACIDADE E LIMITES",
+        "title": "Dados e segurança",
+        "description": (
+            "Transparência sobre o que é coletado, onde fica e o que este "
+            "painel jamais faz."
+        ),
+        "sections": [
+            {
+                "title": "O que é coletado",
+                "body": (
+                    "IP de origem, comandos enviados, credenciais tentadas e "
+                    "eventos da sessão — tudo em texto no seu disco local."
+                ),
+                "items": [
+                    "logs/sessions.jsonl (sessões)",
+                    "logs/honeypot.log (execução)",
+                ],
+            },
+            {
+                "title": "Onde ficam os dados",
+                "body": (
+                    "Apenas na sua máquina. Não há telemetria, conta, nem "
+                    "envio para qualquer servidor — o honeypot é passivo."
+                ),
+            },
+            {
+                "title": "Limites de uso",
+                "body": (
+                    "Projeto educacional para uso em rede própria/laboratório. "
+                    "Expor um honeypot na internet pública exige "
+                    "responsabilidade legal (ver docs/DEPLOYMENT.md)."
+                ),
+            },
+        ],
+    },
+}
 
 
 def _load_sessions() -> list[dict]:
@@ -86,7 +151,22 @@ def create_app() -> Flask:
 
     @app.route("/")
     def index():
-        return render_template_string(INDEX_HTML)
+        return render_template("index.html", active_page="dashboard")
+
+    @app.route("/como-funciona")
+    def how_it_works():
+        return render_template("info.html", active_page="como-funciona",
+                              page=INFO_PAGES["como-funciona"])
+
+    @app.route("/servicos")
+    def services():
+        return render_template("info.html", active_page="servicos",
+                              page=INFO_PAGES["servicos"])
+
+    @app.route("/dados-e-seguranca")
+    def data_and_security():
+        return render_template("info.html", active_page="dados-e-seguranca",
+                              page=INFO_PAGES["dados-e-seguranca"])
 
     @app.route("/api/stats")
     def stats():
