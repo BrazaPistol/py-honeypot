@@ -24,7 +24,7 @@ class TelnetFake(BaseService):
     name = "telnet"
 
     def handle(self, session: Session, sock: socket.socket) -> None:
-        for attempt in range(MAX_LOGIN_ATTEMPTS):
+        for attempt in range(1, MAX_LOGIN_ATTEMPTS + 1):
             # Login
             self.send(sock, b"Login: ")
             user = self.recv_line(sock)
@@ -42,7 +42,7 @@ class TelnetFake(BaseService):
 
             # Sempre falha — objetivo é manter o atacante digitando
             self.send(sock, b"Login incorrect\r\n\r\n")
-            session.add_event_extra = None  # placeholder para extensões futuras
+            session.add_event("login_failed", {"attempt": attempt})
 
         # Após 3 tentativas, derruba (comportamento de daemon realista)
         self.send(sock, b"Too many attempts. Connection closed.\r\n")
