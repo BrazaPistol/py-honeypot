@@ -1,0 +1,1 @@
+Utilidades do honeypot: geolocalização e fingerprinting de atacantes.
