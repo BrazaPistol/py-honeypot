@@ -1,0 +1,14 @@
+# Core
+pyyaml>=6.0
+
+# Dashboard
+flask>=3.0
+
+# CLI / saída estilizada
+rich>=13.0
+
+# Geolocalização de IPs (opcional — fallback offline se ausente)
+geoip2>=4.0
+
+# Testes
+pytest>=8.0
