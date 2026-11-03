@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Painel · py-honeypot{% endblock %}
+
+{% block head %}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+{% endblock %}
+
+{% block content %}
+  <section class="page-heading dashboard-heading">
+    <div>
+      <p class="eyebrow">VISIBILIDADE DO SEU AMBIENTE</p>
+      <h1>Atividade observada</h1>
+      <p class="page-description">Acompanhe as sessões registradas pelos serviços simulados do seu honeypot.</p>
+    </div>
+    <span class="live-indicator"><span></span> Atualização a cada 5 s</span>
+  </section>
+
+  <section class="stats-grid" aria-label="Resumo das sessões">
+    <article class="stat-card">
+      <span class="stat-label">Sessões registradas</span>
+      <strong id="total">0</strong>
+      <span class="stat-note">Total observado</span>
+    </article>
+    <article class="stat-card">
+      <span class="stat-label">Endereços únicos</span>
+      <strong id="unique-ips">0</strong>
+      <span class="stat-note">IPs de origem</span>
+    </article>
+    <article class="stat-card">
+      <span class="stat-label">Serviço mais visado</span>
+      <strong id="top-service">—</strong>
+      <span class="stat-note">Maior número de sessões</span>
+    </article>
+  </section>
+
+  <section class="panel chart-panel">
+    <div class="panel-heading">
+      <div>
+        <p class="eyebrow">DISTRIBUIÇÃO</p>
+        <h2>Sessões por serviço</h2>
+      </div>
+      <span class="panel-caption">Dados locais</span>
+    </div>
+    <div class="chart-container">
+      <canvas id="chart" aria-label="Gráfico de sessões por serviço"></canvas>
+    </div>
+  </section>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='dashboard.js') }}"></script>
+{% endblock %}
