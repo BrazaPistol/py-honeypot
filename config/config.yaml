@@ -1,0 +1,49 @@
+# ============================================================
+# py-honeypot — Configuração
+# Copie para config/local.yaml para sobrescrever sem commitar.
+# ============================================================
+
+server:
+  bind_address: "0.0.0.0"
+  max_connections: 100          # limite global de sessões simultâneas
+  session_timeout: 60            # segundos sem atividade antes de desconectar
+  log_directory: "logs"
+
+# Serviços falsos — descomente/comente para ativar ou desativar.
+# Cada porta deve ser única. Em Linux, portas < 1024 exigem sudo (ou use > 1024).
+services:
+  telnet:
+    enabled: true
+    port: 2323                  # porta alternativa à 23 (evita sudo)
+    banner: "Welcome to RouterOS\nLogin: "
+
+  ftp:
+    enabled: true
+    port: 2121                  # porta alternativa à 21 (evita sudo)
+    banner: "220 FTP Server ready"
+
+  http:
+    enabled: true
+    port: 8080                  # porta alternativa à 80 (evita sudo)
+    banner: "Apache/2.4.41 (Ubuntu)"
+
+  ssh:
+    enabled: false              # handshake SSH é mais complexo; inicie depois
+    port: 2222
+    banner: "SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.1"
+
+logging:
+  format: "json"                # json | text
+  rotation:
+    max_bytes: 10485760         # 10 MB por arquivo
+    backup_count: 5
+
+dashboard:
+  enabled: true
+  host: "127.0.0.1"             # NÃO exponha o dashboard na internet
+  port: 5000
+
+geoip:
+  enabled: true
+  database_path: "data/GeoLite2-City.mmdb"   # baixe de MaxMind (gratuito)
+  # Se ausente, o honeypot funciona sem geolocalização (fallback offline).
