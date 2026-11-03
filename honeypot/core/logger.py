@@ -15,6 +15,8 @@ from typing import Any
 
 _LOGGERS: dict[str, logging.Logger] = {}
 
+_formatter = logging.Formatter()
+
 
 def utc_now() -> str:
     """Timestamp ISO-8601 em UTC."""
@@ -30,7 +32,7 @@ def _format_json(record: logging.LogRecord) -> str:
         "message": record.getMessage(),
     }
     if record.exc_info:
-        payload["exception"] = logging.Formatter.formatException(record, record.exc_info)
+        payload["exception"] = _formatter.formatException(record.exc_info)
 
     # Eventos de sessão carregam atributos extras (session, ip, service, ...)
     extras = getattr(record, "honeypot_data", None)
@@ -38,6 +40,13 @@ def _format_json(record: logging.LogRecord) -> str:
         payload["data"] = extras
 
     return json.dumps(payload, ensure_ascii=False, default=str)
+
+
+class _JSONFormatter(logging.Formatter):
+    """Formatter que emite exatamente a linha JSON já renderizada."""
+
+    def format(self, record: logging.LogRecord) -> str:
+        return _format_json(record)
 
 
 def get_logger(name: str = "honeypot", log_dir: str = "logs",
@@ -59,8 +68,7 @@ def get_logger(name: str = "honeypot", log_dir: str = "logs",
         backupCount=backup_count,
         encoding="utf-8",
     )
-    file_handler.setFormatter(logging.Formatter(fmt="%(message)s"))
-    file_handler.emit = _json_emit(file_handler)  # type: ignore[method-assign]
+    file_handler.setFormatter(_JSONFormatter())
 
     # Handler de console (uso humano durante desenvolvimento)
     console_handler = logging.StreamHandler()
@@ -74,18 +82,3 @@ def get_logger(name: str = "honeypot", log_dir: str = "logs",
 
     _LOGGERS[name] = logger
     return logger
-
-
-def _json_emit(handler: logging.Handler):
-    """Envolve o emit padrão para gravar JSON em vez de texto."""
-    original_emit = handler.emit
-
-    def emit(record: logging.LogRecord) -> None:
-        line = _format_json(record)
-        record_copy = logging.LogRecord(
-            name=record.name, level=record.levelno, pathname=record.pathname,
-            lineno=record.lineno, msg=line, args=None, exc_info=None,
-        )
-        original_emit(record_copy)
-
-    return emit
