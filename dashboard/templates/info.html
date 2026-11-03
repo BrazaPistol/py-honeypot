@@ -14,9 +14,11 @@
       <article class="panel info-card">
         <h2>{{ section.title }}</h2>
         <p>{{ section.body }}</p>
-        {% if section["items"] %}
+        {# section.get() evita o fallback do Jinja: section['items'] em dict
+           sem a chave cairia no metodo embutido dict.items() e quebraria o for #}
+        {% if section.get("items") %}
           <ul class="info-list">
-            {% for item in section["items"] %}
+            {% for item in section.get("items") %}
               <li>{{ item }}</li>
             {% endfor %}
           </ul>
