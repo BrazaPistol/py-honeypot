@@ -66,7 +66,7 @@ class HoneypotHandler(socketserver.BaseRequestHandler):
 
         service = svc_cls(self.service_config)
         try:
-            service.handle(self.session, self.request)
+            service.start(self.session, self.request)
         except socket.timeout:
             log.info("Sessão encerrada por timeout",
                      extra={"honeypot_data": {"session": self.session.to_dict()}})
@@ -93,6 +93,12 @@ class HoneypotServer(socketserver.ThreadingTCPServer):
 
 def run(config_path=None) -> None:
     """Ponto de entrada: carrega config e sobe todos os serviços habilitados."""
+    # Importa os módulos de serviços para que os decorators registrem as classes
+    import honeypot.services.telnet  # noqa: F401
+    import honeypot.services.ftp  # noqa: F401
+    import honeypot.services.http  # noqa: F401
+    import honeypot.services.ssh  # noqa: F401
+
     config = load_config(config_path)
     timeout = int(config["server"].get("session_timeout", 60))
     bind = config["server"].get("bind_address", "0.0.0.0")
