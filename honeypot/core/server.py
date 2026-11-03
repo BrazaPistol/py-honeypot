@@ -5,6 +5,9 @@ de atacante recebe uma thread dedicada com timeout configurável.
 
 O registro de serviços vive em honeypot.core.registry (módulo próprio)
 para evitar cópias duplicadas quando executado via `python -m`.
+
+Ao encerrar cada sessão, o IP de origem é enriquecido passivamente
+com dados RDAP/whois (organização, rede, país) — ver utils/whois_enrich.
 """
 
 from __future__ import annotations
@@ -19,6 +22,7 @@ from honeypot.core.config import load_config
 from honeypot.core.logger import get_logger, utc_now
 from honeypot.core.registry import _SERVICE_REGISTRY, register_service  # noqa: F401
 from honeypot.core.session import Session
+from honeypot.utils.whois_enrich import enrich_session
 
 log = get_logger()
 
@@ -65,6 +69,9 @@ class HoneypotHandler(socketserver.BaseRequestHandler):
             log.exception("Erro inesperado no serviço %s", self.service_name,
                           extra={"honeypot_data": {"session": self.session.to_dict()}})
         finally:
+            # Enriquecimento passivo (RDAP/whois) do IP do atacante.
+            # lookup_ip nunca levanta exceção e usa cache — seguro aqui.
+            enrich_session(self.session)
             self.session.close()
             log.info("Sessão registrada: %s", self.session.session_id,
                      extra={"honeypot_data": {"session": self.session.to_dict()}})
