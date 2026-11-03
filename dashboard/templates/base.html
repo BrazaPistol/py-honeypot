@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101923">
+  <title>{% block title %}py-honeypot{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="{{ url_for('index') }}" aria-label="py-honeypot, início">
+      <span class="brand-mark" aria-hidden="true">◉</span>
+      <span>py-honeypot</span>
+    </a>
+    <nav class="main-nav" aria-label="Navegação principal">
+      <a href="{{ url_for('index') }}" {% if active_page == "dashboard" %}aria-current="page"{% endif %}>Painel</a>
+      <a href="{{ url_for('how_it_works') }}" {% if active_page == "como-funciona" %}aria-current="page"{% endif %}>Como funciona</a>
+      <a href="{{ url_for('services') }}" {% if active_page == "servicos" %}aria-current="page"{% endif %}>Serviços</a>
+      <a href="{{ url_for('data_and_security') }}" {% if active_page == "dados-e-seguranca" %}aria-current="page"{% endif %}>Dados e segurança</a>
+    </nav>
+  </header>
+
+  <main class="page-shell">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    <span>Ferramenta de observabilidade do seu próprio honeypot.</span>
+    <span>Não é uma busca global de dispositivos nem é afiliada ao Shodan.</span>
+  </footer>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

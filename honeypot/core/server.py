@@ -2,6 +2,9 @@
 
 Cada serviço habilitado roda em sua própria thread. Cada conexão
 de atacante recebe uma thread dedicada com timeout configurável.
+
+O registro de serviços vive em honeypot.core.registry (módulo próprio)
+para evitar cópias duplicadas quando executado via `python -m`.
 """
 
 from __future__ import annotations
@@ -14,25 +17,10 @@ from typing import Any
 
 from honeypot.core.config import load_config
 from honeypot.core.logger import get_logger, utc_now
+from honeypot.core.registry import _SERVICE_REGISTRY, register_service  # noqa: F401
 from honeypot.core.session import Session
 
 log = get_logger()
-
-# Registro de serviços — preenchido por register_service()
-_SERVICE_REGISTRY: dict[str, type] = {}
-
-
-def register_service(name: str):
-    """Decorator que registra uma classe de serviço falso.
-
-    Uso:
-        @register_service("telnet")
-        class TelnetFake(BaseService): ...
-    """
-    def decorator(cls):
-        _SERVICE_REGISTRY[name] = cls
-        return cls
-    return decorator
 
 
 def _build_session(service_name: str, client_address: tuple[str, int]) -> Session:
